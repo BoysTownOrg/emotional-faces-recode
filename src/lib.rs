@@ -57,11 +57,13 @@ fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
             .iter()
             .skip(response_ready_index + 1)
             .find(|event| event.trigger_code == 256 || event.trigger_code == 512);
+        let mut correct = false;
+        let mut response_time_milliseconds = None;
+        let mut condition = Condition::Happy;
+        let mut sex = Sex::Male;
         match events[response_ready_index - 1].trigger_code {
             21 => {}
             22 => {
-                let mut correct = false;
-                let mut response_time_milliseconds = None;
                 if let Some(event) = response {
                     correct = event.trigger_code == 512;
                     if correct {
@@ -72,19 +74,34 @@ fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
                         );
                     }
                 }
-                trials.push(Trial {
-                    correct_response: correct,
-                    condition: Condition::Happy,
-                    sex: Sex::Female,
-                    response_time_milliseconds,
-                });
+                sex = Sex::Female;
+                condition = Condition::Happy;
             }
             23 => {}
-            31 => {}
+            31 => {
+                if let Some(event) = response {
+                    correct = event.trigger_code == 256;
+                    if correct {
+                        response_time_milliseconds = Some(
+                            (event.time_microseconds
+                                - events[response_ready_index].time_microseconds)
+                                / 1000,
+                        );
+                    }
+                }
+                sex = Sex::Male;
+                condition = Condition::Angry;
+            }
             32 => {}
             33 => {}
             _ => {}
         }
+        trials.push(Trial {
+            correct_response: correct,
+            condition,
+            sex,
+            response_time_milliseconds,
+        })
     }
     trials
 }
@@ -122,7 +139,7 @@ mod tests {
     }
 
     #[test]
-    fn reconstruct_trials() {
+    fn reconstruct_trials_1() {
         let trials = crate::reconstruct_trials(vec![
             Event {
                 time_microseconds: 6293000,
@@ -144,6 +161,53 @@ mod tests {
                 sex: Sex::Female,
                 response_time_milliseconds: Some(7288 - 6302)
             }],
+            trials
+        );
+    }
+
+    #[test]
+    fn reconstruct_trials_2() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 8190000,
+                trigger_code: 22,
+            },
+            Event {
+                time_microseconds: 8199000,
+                trigger_code: 4118,
+            },
+            Event {
+                time_microseconds: 8888000,
+                trigger_code: 512,
+            },
+            Event {
+                time_microseconds: 11342000,
+                trigger_code: 31,
+            },
+            Event {
+                time_microseconds: 11352000,
+                trigger_code: 4127,
+            },
+            Event {
+                time_microseconds: 11851000,
+                trigger_code: 256,
+            },
+        ]);
+        assert_eq!(
+            vec![
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Happy,
+                    sex: Sex::Female,
+                    response_time_milliseconds: Some(8888 - 8199)
+                },
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(11851 - 11352)
+                }
+            ],
             trials
         );
     }
