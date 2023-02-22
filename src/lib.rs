@@ -4,7 +4,7 @@ struct Event {
     trigger_code: i32,
 }
 
-fn parse(input: &str) -> Vec<Event> {
+fn parse_events(input: &str) -> Vec<Event> {
     input
         .lines()
         .filter(|&line| line.contains("FIFF Trigger"))
@@ -23,8 +23,8 @@ mod tests {
     use crate::Event;
 
     #[test]
-    fn parse() {
-        let events = crate::parse(
+    fn parse_events() {
+        let events = crate::parse_events(
             "Tmu         	Code	TriNo	Comnt	Ver-C
 3809479        	11	0	all  6017 0.874 2.19                    
 4618000        	1	4096	FIFF Trigger: 4096                      
