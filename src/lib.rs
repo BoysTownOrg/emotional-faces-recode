@@ -66,8 +66,9 @@ fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
                     correct = event.trigger_code == 512;
                     if correct {
                         response_time_milliseconds = Some(
-                            event.time_microseconds
-                                - events[response_ready_index].time_microseconds,
+                            (event.time_microseconds
+                                - events[response_ready_index].time_microseconds)
+                                / 1000,
                         );
                     }
                 }
@@ -141,7 +142,7 @@ mod tests {
                 correct_response: true,
                 condition: Condition::Happy,
                 sex: Sex::Female,
-                response_time_milliseconds: Some(7288000 - 6302000)
+                response_time_milliseconds: Some(7288 - 6302)
             }],
             trials
         );
