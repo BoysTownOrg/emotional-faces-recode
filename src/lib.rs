@@ -205,4 +205,35 @@ mod tests {
             trials
         );
     }
+
+    #[test]
+    fn reconstruct_trials_3() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 3379000,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 5050000,
+                trigger_code: 22,
+            },
+            Event {
+                time_microseconds: 5063000,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 6402000,
+                trigger_code: 512,
+            },
+        ]);
+        assert_eq!(
+            vec![Trial {
+                correct_response: true,
+                condition: Condition::Happy,
+                sex: Sex::Female,
+                response_time_milliseconds: Some(6402 - 5063)
+            }],
+            trials
+        );
+    }
 }
