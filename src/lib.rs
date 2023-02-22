@@ -48,7 +48,10 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
         .collect::<Vec<(usize, &Event)>>();
     let mut response_ready_indices = enumerated_nonresponses
         .windows(2)
-        .filter(|window| window[1].1.time_microseconds - window[0].1.time_microseconds > 2500000)
+        .filter(|window| {
+            window[1].1.time_microseconds - window[0].1.time_microseconds > 2500000
+                && window[1].1.time_microseconds - window[0].1.time_microseconds < 10000000
+        })
         .map(|window| window[0].0)
         .collect::<Vec<usize>>();
     response_ready_indices.push(enumerated_nonresponses.last().unwrap().0);
@@ -61,7 +64,9 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
         let mut sex = Sex::Male;
         let mut correct_code = 0;
         let visual_trigger_mask = 1 << 12;
-        match events[response_ready_index - 1].trigger_code & !visual_trigger_mask {
+        let combined_triggers = events[response_ready_index].trigger_code
+            | events[response_ready_index - 1].trigger_code;
+        match combined_triggers & !visual_trigger_mask {
             21 => {
                 correct_code = 512;
                 sex = Sex::Female;
@@ -100,7 +105,8 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
             correct_response = event.trigger_code == correct_code;
             if correct_response {
                 response_time_milliseconds = Some(
-                    (event.time_microseconds - events[response_ready_index].time_microseconds)
+                    (event.time_microseconds - events[response_ready_index].time_microseconds
+                        + 500)
                         / 1000,
                 );
             }
@@ -369,6 +375,53 @@ mod tests {
                 sex: Sex::Female,
                 response_time_milliseconds: Some(125153 - 124555)
             }],
+            trials
+        );
+    }
+
+    #[test]
+    fn reconstruct_trials_7() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 374785984,
+                trigger_code: 31,
+            },
+            Event {
+                time_microseconds: 374798016,
+                trigger_code: 4127,
+            },
+            Event {
+                time_microseconds: 375347008,
+                trigger_code: 256,
+            },
+            Event {
+                time_microseconds: 377984000,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 393036000,
+                trigger_code: 4117,
+            },
+            Event {
+                time_microseconds: 393732992,
+                trigger_code: 512,
+            },
+        ]);
+        assert_eq!(
+            vec![
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(549)
+                },
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Female,
+                    response_time_milliseconds: Some(697)
+                }
+            ],
             trials
         );
     }
