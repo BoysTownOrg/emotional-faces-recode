@@ -70,7 +70,13 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
                 sex = Sex::Female;
                 condition = Condition::Happy;
             }
-            23 => {}
+            23 => {
+                if let Some(event) = response {
+                    correct = event.trigger_code == 512;
+                }
+                sex = Sex::Female;
+                condition = Condition::Neutral;
+            }
             31 => {
                 if let Some(event) = response {
                     correct = event.trigger_code == 256;
@@ -78,7 +84,13 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
                 sex = Sex::Male;
                 condition = Condition::Angry;
             }
-            32 => {}
+            32 => {
+                if let Some(event) = response {
+                    correct = event.trigger_code == 256;
+                }
+                sex = Sex::Male;
+                condition = Condition::Happy;
+            }
             33 => {}
             _ => {}
         }
@@ -233,6 +245,53 @@ mod tests {
                 sex: Sex::Female,
                 response_time_milliseconds: Some(6402 - 5063)
             }],
+            trials
+        );
+    }
+
+    #[test]
+    fn reconstruct_trials_4() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 17681000,
+                trigger_code: 23,
+            },
+            Event {
+                time_microseconds: 17691000,
+                trigger_code: 4119,
+            },
+            Event {
+                time_microseconds: 18139000,
+                trigger_code: 512,
+            },
+            Event {
+                time_microseconds: 20840000,
+                trigger_code: 32,
+            },
+            Event {
+                time_microseconds: 20860000,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 21298000,
+                trigger_code: 256,
+            },
+        ]);
+        assert_eq!(
+            vec![
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Neutral,
+                    sex: Sex::Female,
+                    response_time_milliseconds: Some(18139 - 17691)
+                },
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Happy,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(21298 - 20860)
+                }
+            ],
             trials
         );
     }
