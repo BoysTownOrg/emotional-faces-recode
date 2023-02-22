@@ -1,10 +1,10 @@
 #[derive(Debug, PartialEq)]
-struct Event {
+pub struct Event {
     time_microseconds: i64,
     trigger_code: i32,
 }
 
-fn parse_events(input: &str) -> Vec<Event> {
+pub fn parse_events(input: &str) -> Vec<Event> {
     input
         .lines()
         .filter(|&line| line.contains("FIFF Trigger"))
@@ -19,27 +19,27 @@ fn parse_events(input: &str) -> Vec<Event> {
 }
 
 #[derive(Debug, PartialEq)]
-enum Condition {
+pub enum Condition {
     Angry,
     Happy,
     Neutral,
 }
 
 #[derive(Debug, PartialEq)]
-enum Sex {
+pub enum Sex {
     Male,
     Female,
 }
 
 #[derive(Debug, PartialEq)]
-struct Trial {
+pub struct Trial {
     correct_response: bool,
     condition: Condition,
     sex: Sex,
     response_time_milliseconds: Option<i64>,
 }
 
-fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
+pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
     let mut trials = Vec::new();
     let enumerated_nonresponses = events
         .iter()
@@ -66,13 +66,6 @@ fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
             22 => {
                 if let Some(event) = response {
                     correct = event.trigger_code == 512;
-                    if correct {
-                        response_time_milliseconds = Some(
-                            (event.time_microseconds
-                                - events[response_ready_index].time_microseconds)
-                                / 1000,
-                        );
-                    }
                 }
                 sex = Sex::Female;
                 condition = Condition::Happy;
@@ -81,13 +74,6 @@ fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
             31 => {
                 if let Some(event) = response {
                     correct = event.trigger_code == 256;
-                    if correct {
-                        response_time_milliseconds = Some(
-                            (event.time_microseconds
-                                - events[response_ready_index].time_microseconds)
-                                / 1000,
-                        );
-                    }
                 }
                 sex = Sex::Male;
                 condition = Condition::Angry;
@@ -95,6 +81,14 @@ fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
             32 => {}
             33 => {}
             _ => {}
+        }
+        if let Some(event) = response {
+            if correct {
+                response_time_milliseconds = Some(
+                    (event.time_microseconds - events[response_ready_index].time_microseconds)
+                        / 1000,
+                );
+            }
         }
         trials.push(Trial {
             correct_response: correct,
