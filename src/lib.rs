@@ -41,24 +41,42 @@ struct Trial {
 
 fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
     let mut trials = Vec::new();
-    let mut i = 0;
-    while i < events.len() - 2 {
-        match events[i].trigger_code {
+    let enumerated_nonresponses = events
+        .iter()
+        .enumerate()
+        .filter(|(_, event)| event.trigger_code != 512 && event.trigger_code != 256)
+        .collect::<Vec<(usize, &Event)>>();
+    let mut response_ready_indices = enumerated_nonresponses
+        .windows(2)
+        .filter(|window| window[1].1.time_microseconds - window[0].1.time_microseconds > 2500000)
+        .map(|window| window[0].0)
+        .collect::<Vec<usize>>();
+    response_ready_indices.push(enumerated_nonresponses.last().unwrap().0);
+    for response_ready_index in response_ready_indices {
+        let response = events
+            .iter()
+            .skip(response_ready_index + 1)
+            .find(|event| event.trigger_code == 256 || event.trigger_code == 512);
+        match events[response_ready_index - 1].trigger_code {
             21 => {}
             22 => {
-                let correct = events[i + 2].trigger_code == 512;
-                let response_time_milliseconds = if correct {
-                    Some(events[i + 2].time_microseconds - events[i + 1].time_microseconds)
-                } else {
-                    None
-                };
+                let mut correct = false;
+                let mut response_time_milliseconds = None;
+                if let Some(event) = response {
+                    correct = event.trigger_code == 512;
+                    if correct {
+                        response_time_milliseconds = Some(
+                            event.time_microseconds
+                                - events[response_ready_index].time_microseconds,
+                        );
+                    }
+                }
                 trials.push(Trial {
                     correct_response: correct,
                     condition: Condition::Happy,
                     sex: Sex::Female,
                     response_time_milliseconds,
                 });
-                i += 1;
             }
             23 => {}
             31 => {}
@@ -66,9 +84,7 @@ fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
             33 => {}
             _ => {}
         }
-        i += 1;
     }
-
     trials
 }
 
