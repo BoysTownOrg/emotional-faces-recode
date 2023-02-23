@@ -58,10 +58,7 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
         .collect::<Vec<usize>>();
     response_ready_indices.push(enumerated_nonresponses.last().unwrap().0);
     for response_ready_index in response_ready_indices {
-        let response = events
-            .iter()
-            .skip(response_ready_index + 1)
-            .find(|event| event.trigger_code == 256 || event.trigger_code == 512);
+        let response = events.get(response_ready_index + 1);
         let mut condition = Condition::Happy;
         let mut sex = Sex::Male;
         let mut correct_code = 0;
@@ -482,6 +479,49 @@ mod tests {
                 sex: Sex::Female,
                 response_time_milliseconds: None
             },],
+            trials
+        );
+    }
+
+    #[test]
+    fn reconstruct_trials_missing_response() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 636076032,
+                trigger_code: 22,
+            },
+            Event {
+                time_microseconds: 636081984,
+                trigger_code: 4118,
+            },
+            Event {
+                time_microseconds: 639188992,
+                trigger_code: 31,
+            },
+            Event {
+                time_microseconds: 639201024,
+                trigger_code: 4127,
+            },
+            Event {
+                time_microseconds: 639708032,
+                trigger_code: 512,
+            },
+        ]);
+        assert_eq!(
+            vec![
+                Trial {
+                    correct_response: false,
+                    condition: Condition::Happy,
+                    sex: Sex::Female,
+                    response_time_milliseconds: None
+                },
+                Trial {
+                    correct_response: false,
+                    condition: Condition::Angry,
+                    sex: Sex::Male,
+                    response_time_milliseconds: None
+                }
+            ],
             trials
         );
     }
