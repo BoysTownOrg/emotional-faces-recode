@@ -51,7 +51,8 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
     let mut response_ready_indices = enumerated_nonresponses
         .windows(2)
         .filter(|window| {
-            window[1].1.time_microseconds - window[0].1.time_microseconds > 2500000
+            !(window[0].1.trigger_code == 4096 && window[0].0 == 0)
+                && window[1].1.time_microseconds - window[0].1.time_microseconds > 2500000
                 && window[1].1.time_microseconds - window[0].1.time_microseconds < 10000000
         })
         .map(|window| window[0].0)
@@ -227,7 +228,7 @@ mod tests {
     }
 
     #[test]
-    fn reconstruct_trials_3() {
+    fn reconstruct_trials_preliminary_4096() {
         let trials = crate::reconstruct_trials(vec![
             Event {
                 time_microseconds: 3379000,
@@ -252,6 +253,37 @@ mod tests {
                 condition: Condition::Happy,
                 sex: Sex::Female,
                 response_time_milliseconds: Some(6402 - 5063)
+            }],
+            trials
+        );
+    }
+
+    #[test]
+    fn reconstruct_trials_preliminary_4096_earlier() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 2543000,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 6207000,
+                trigger_code: 22,
+            },
+            Event {
+                time_microseconds: 6211000,
+                trigger_code: 4118,
+            },
+            Event {
+                time_microseconds: 7104000,
+                trigger_code: 512,
+            },
+        ]);
+        assert_eq!(
+            vec![Trial {
+                correct_response: true,
+                condition: Condition::Happy,
+                sex: Sex::Female,
+                response_time_milliseconds: Some(7104 - 6211)
             }],
             trials
         );
