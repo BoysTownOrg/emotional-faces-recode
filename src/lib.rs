@@ -557,4 +557,55 @@ mod tests {
             trials
         );
     }
+
+    #[test]
+    fn reconstruct_trials_duplicate_trigger() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 696003968,
+                trigger_code: 21,
+            },
+            Event {
+                time_microseconds: 696014976,
+                trigger_code: 4117,
+            },
+            Event {
+                time_microseconds: 696262016,
+                trigger_code: 512,
+            },
+            Event {
+                time_microseconds: 699091008,
+                trigger_code: 31,
+            },
+            Event {
+                time_microseconds: 699091968,
+                trigger_code: 31,
+            },
+            Event {
+                time_microseconds: 699100992,
+                trigger_code: 4127,
+            },
+            Event {
+                time_microseconds: 699731008,
+                trigger_code: 512,
+            },
+        ]);
+        assert_eq!(
+            vec![
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Female,
+                    response_time_milliseconds: Some(247)
+                },
+                Trial {
+                    correct_response: false,
+                    condition: Condition::Angry,
+                    sex: Sex::Male,
+                    response_time_milliseconds: None
+                }
+            ],
+            trials
+        );
+    }
 }
