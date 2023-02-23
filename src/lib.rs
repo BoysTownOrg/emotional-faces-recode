@@ -113,7 +113,7 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
             let difference_time_microseconds =
                 window[1].1.time_microseconds - window[0].1.time_microseconds;
             !(window[0].1.trigger_code == 4096 && window[0].0 == 0)
-                && difference_time_microseconds > 2500000
+                && difference_time_microseconds > 2000000
                 && difference_time_microseconds < 10000000
         })
         .map(|window| window[0].0)
@@ -818,6 +818,57 @@ mod tests {
                     condition: Condition::Happy,
                     sex: Sex::Male,
                     response_time_milliseconds: Some(79444 - 78706)
+                }
+            ],
+            trials
+        );
+    }
+
+    #[test]
+    fn reconstruct_trials_lone_visual() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 185392000,
+                trigger_code: 33,
+            },
+            Event {
+                time_microseconds: 185410000,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 186028000,
+                trigger_code: 256,
+            },
+            Event {
+                time_microseconds: 187780000,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 188596000,
+                trigger_code: 33,
+            },
+            Event {
+                time_microseconds: 188612000,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 189060000,
+                trigger_code: 4352,
+            },
+        ]);
+        assert_eq!(
+            vec![
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Neutral,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(186028 - 185410)
+                },
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Neutral,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(189060 - 188612)
                 }
             ],
             trials
