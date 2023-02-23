@@ -39,8 +39,65 @@ pub struct Trial {
     response_time_milliseconds: Option<i64>,
 }
 
+fn trial_from_response_ready_index(events: &Vec<Event>, index: usize) -> Trial {
+    let response = events.get(index + 1);
+    let mut condition = Condition::Happy;
+    let mut sex = Sex::Male;
+    let mut correct_code = 0;
+    let visual_trigger_mask = 1 << 12;
+    let combined_triggers = events[index].trigger_code | events[index - 1].trigger_code;
+    match combined_triggers & !visual_trigger_mask {
+        21 => {
+            correct_code = 512;
+            sex = Sex::Female;
+            condition = Condition::Angry;
+        }
+        22 => {
+            correct_code = 512;
+            sex = Sex::Female;
+            condition = Condition::Happy;
+        }
+        23 => {
+            correct_code = 512;
+            sex = Sex::Female;
+            condition = Condition::Neutral;
+        }
+        31 => {
+            correct_code = 256;
+            sex = Sex::Male;
+            condition = Condition::Angry;
+        }
+        32 => {
+            correct_code = 256;
+            sex = Sex::Male;
+            condition = Condition::Happy;
+        }
+        33 => {
+            correct_code = 256;
+            sex = Sex::Male;
+            condition = Condition::Neutral;
+        }
+        _ => {}
+    }
+    let mut correct_response = false;
+    let mut response_time_milliseconds = None;
+    if let Some(event) = response {
+        correct_response = event.trigger_code == correct_code;
+        if correct_response {
+            response_time_milliseconds =
+                Some((event.time_microseconds - events[index].time_microseconds + 500) / 1000);
+        }
+    }
+
+    Trial {
+        correct_response,
+        condition,
+        sex,
+        response_time_milliseconds,
+    }
+}
+
 pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
-    let mut trials = Vec::new();
     let enumerated_nonresponses = events
         .iter()
         .enumerate()
@@ -53,74 +110,19 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
     let mut response_ready_indices = enumerated_nonresponses
         .windows(2)
         .filter(|window| {
+            let difference_time_microseconds =
+                window[1].1.time_microseconds - window[0].1.time_microseconds;
             !(window[0].1.trigger_code == 4096 && window[0].0 == 0)
-                && window[1].1.time_microseconds - window[0].1.time_microseconds > 2500000
-                && window[1].1.time_microseconds - window[0].1.time_microseconds < 10000000
+                && difference_time_microseconds > 2500000
+                && difference_time_microseconds < 10000000
         })
         .map(|window| window[0].0)
         .collect::<Vec<usize>>();
     response_ready_indices.push(enumerated_nonresponses.last().unwrap().0);
-    for response_ready_index in response_ready_indices {
-        let response = events.get(response_ready_index + 1);
-        let mut condition = Condition::Happy;
-        let mut sex = Sex::Male;
-        let mut correct_code = 0;
-        let visual_trigger_mask = 1 << 12;
-        let combined_triggers = events[response_ready_index].trigger_code
-            | events[response_ready_index - 1].trigger_code;
-        match combined_triggers & !visual_trigger_mask {
-            21 => {
-                correct_code = 512;
-                sex = Sex::Female;
-                condition = Condition::Angry;
-            }
-            22 => {
-                correct_code = 512;
-                sex = Sex::Female;
-                condition = Condition::Happy;
-            }
-            23 => {
-                correct_code = 512;
-                sex = Sex::Female;
-                condition = Condition::Neutral;
-            }
-            31 => {
-                correct_code = 256;
-                sex = Sex::Male;
-                condition = Condition::Angry;
-            }
-            32 => {
-                correct_code = 256;
-                sex = Sex::Male;
-                condition = Condition::Happy;
-            }
-            33 => {
-                correct_code = 256;
-                sex = Sex::Male;
-                condition = Condition::Neutral;
-            }
-            _ => {}
-        }
-        let mut correct_response = false;
-        let mut response_time_milliseconds = None;
-        if let Some(event) = response {
-            correct_response = event.trigger_code == correct_code;
-            if correct_response {
-                response_time_milliseconds = Some(
-                    (event.time_microseconds - events[response_ready_index].time_microseconds
-                        + 500)
-                        / 1000,
-                );
-            }
-        }
-        trials.push(Trial {
-            correct_response,
-            condition,
-            sex,
-            response_time_milliseconds,
-        })
-    }
-    trials
+    response_ready_indices
+        .iter()
+        .map(|&index| trial_from_response_ready_index(&events, index))
+        .collect()
 }
 
 #[cfg(test)]
