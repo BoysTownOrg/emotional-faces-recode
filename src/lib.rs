@@ -82,7 +82,7 @@ fn trial_from_response_ready_index(events: &Vec<Event>, index: usize) -> Trial {
     let mut correct_response = false;
     let mut response_time_milliseconds = None;
     if let Some(event) = response {
-        correct_response = event.trigger_code == correct_code;
+        correct_response = event.trigger_code & !visual_trigger_mask == correct_code;
         if correct_response {
             response_time_milliseconds =
                 Some((event.time_microseconds - events[index].time_microseconds + 500) / 1000);
@@ -771,6 +771,53 @@ mod tests {
                     condition: Condition::Angry,
                     sex: Sex::Male,
                     response_time_milliseconds: Some(125783 - 125287)
+                }
+            ],
+            trials
+        );
+    }
+
+    #[test]
+    fn reconstruct_trials_responses_masked_by_visual() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 75647000,
+                trigger_code: 23,
+            },
+            Event {
+                time_microseconds: 75655000,
+                trigger_code: 4119,
+            },
+            Event {
+                time_microseconds: 76278000,
+                trigger_code: 4608,
+            },
+            Event {
+                time_microseconds: 78691000,
+                trigger_code: 32,
+            },
+            Event {
+                time_microseconds: 78706000,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 79444000,
+                trigger_code: 4352,
+            },
+        ]);
+        assert_eq!(
+            vec![
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Neutral,
+                    sex: Sex::Female,
+                    response_time_milliseconds: Some(76278 - 75655)
+                },
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Happy,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(79444 - 78706)
                 }
             ],
             trials
