@@ -454,4 +454,35 @@ mod tests {
             trials
         );
     }
+
+    #[test]
+    fn reconstruct_trials_double_response() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 558014976,
+                trigger_code: 23,
+            },
+            Event {
+                time_microseconds: 558033024,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 558448000,
+                trigger_code: 256,
+            },
+            Event {
+                time_microseconds: 558939008,
+                trigger_code: 512,
+            },
+        ]);
+        assert_eq!(
+            vec![Trial {
+                correct_response: false,
+                condition: Condition::Neutral,
+                sex: Sex::Female,
+                response_time_milliseconds: None
+            },],
+            trials
+        );
+    }
 }
