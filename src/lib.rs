@@ -44,7 +44,9 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
     let enumerated_nonresponses = events
         .iter()
         .enumerate()
-        .filter(|(_, event)| event.trigger_code != 512 && event.trigger_code != 256)
+        .filter(|(_, event)| {
+            event.trigger_code != 512 && event.trigger_code != 256 && event.trigger_code != 7936
+        })
         .collect::<Vec<(usize, &Event)>>();
     let mut response_ready_indices = enumerated_nonresponses
         .windows(2)
@@ -422,6 +424,33 @@ mod tests {
                     response_time_milliseconds: Some(697)
                 }
             ],
+            trials
+        );
+    }
+
+    #[test]
+    fn reconstruct_trials_response_of_7936() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 299367008,
+                trigger_code: 23,
+            },
+            Event {
+                time_microseconds: 299380992,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 299999008,
+                trigger_code: 7936,
+            },
+        ]);
+        assert_eq!(
+            vec![Trial {
+                correct_response: false,
+                condition: Condition::Neutral,
+                sex: Sex::Female,
+                response_time_milliseconds: None
+            },],
             trials
         );
     }
