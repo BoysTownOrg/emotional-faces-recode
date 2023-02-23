@@ -108,12 +108,24 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
         })
         .collect::<Vec<(usize, &Event)>>();
     let mut response_ready_indices = enumerated_nonresponses
+        .iter()
+        .enumerate()
+        .filter(|(i, (_, event))| {
+            if *i > 0 {
+                !(event.trigger_code == 4096
+                    && enumerated_nonresponses[i - 1].1.trigger_code == 4096)
+            } else {
+                true
+            }
+        })
+        .map(|(_, enumerated_nonresponse)| enumerated_nonresponse)
+        .collect::<Vec<_>>()
         .windows(2)
         .filter(|window| {
             let difference_time_microseconds =
                 window[1].1.time_microseconds - window[0].1.time_microseconds;
             !(window[0].1.trigger_code == 4096 && window[0].0 == 0)
-                && difference_time_microseconds > 2000000
+                && difference_time_microseconds > 2500000
                 && difference_time_microseconds < 10000000
         })
         .map(|window| window[0].0)
@@ -903,6 +915,108 @@ mod tests {
                 sex: Sex::Male,
                 response_time_milliseconds: Some(932)
             }],
+            trials
+        );
+    }
+
+    #[test]
+    fn reconstruct_trials_lone_visual_2() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 626684032,
+                trigger_code: 31,
+            },
+            Event {
+                time_microseconds: 626700992,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 627206016,
+                trigger_code: 256,
+            },
+            Event {
+                time_microseconds: 628779008,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 629913024,
+                trigger_code: 22,
+            },
+            Event {
+                time_microseconds: 629936000,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 630563008,
+                trigger_code: 4608,
+            },
+        ]);
+        assert_eq!(
+            vec![
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(505)
+                },
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Happy,
+                    sex: Sex::Female,
+                    response_time_milliseconds: Some(627)
+                }
+            ],
+            trials
+        );
+    }
+
+    #[test]
+    fn reconstruct_trials_lone_visual_3() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 689667008,
+                trigger_code: 23,
+            },
+            Event {
+                time_microseconds: 689683008,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 690217024,
+                trigger_code: 512,
+            },
+            Event {
+                time_microseconds: 690545984,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 692801024,
+                trigger_code: 31,
+            },
+            Event {
+                time_microseconds: 692817984,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 693379008,
+                trigger_code: 4352,
+            },
+        ]);
+        assert_eq!(
+            vec![
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Neutral,
+                    sex: Sex::Female,
+                    response_time_milliseconds: Some(534)
+                },
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(561)
+                }
+            ],
             trials
         );
     }
