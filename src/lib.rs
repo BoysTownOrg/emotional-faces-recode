@@ -45,7 +45,9 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
         .iter()
         .enumerate()
         .filter(|(_, event)| {
-            event.trigger_code != 512 && event.trigger_code != 256 && event.trigger_code != 7936
+            let button1_mask = 1 << 8;
+            let button2_mask = 1 << 9;
+            event.trigger_code & (button1_mask | button2_mask) == 0
         })
         .collect::<Vec<(usize, &Event)>>();
     let mut response_ready_indices = enumerated_nonresponses
@@ -716,6 +718,57 @@ mod tests {
                     condition: Condition::Neutral,
                     sex: Sex::Male,
                     response_time_milliseconds: Some(686092 - 685276)
+                }
+            ],
+            trials
+        );
+    }
+
+    #[test]
+    fn reconstruct_trials_response_of_768() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 122190000,
+                trigger_code: 21,
+            },
+            Event {
+                time_microseconds: 122201000,
+                trigger_code: 4117,
+            },
+            Event {
+                time_microseconds: 122553000,
+                trigger_code: 256,
+            },
+            Event {
+                time_microseconds: 122841000,
+                trigger_code: 768,
+            },
+            Event {
+                time_microseconds: 125278000,
+                trigger_code: 31,
+            },
+            Event {
+                time_microseconds: 125287000,
+                trigger_code: 4127,
+            },
+            Event {
+                time_microseconds: 125783000,
+                trigger_code: 256,
+            },
+        ]);
+        assert_eq!(
+            vec![
+                Trial {
+                    correct_response: false,
+                    condition: Condition::Angry,
+                    sex: Sex::Female,
+                    response_time_milliseconds: None
+                },
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(125783 - 125287)
                 }
             ],
             trials
