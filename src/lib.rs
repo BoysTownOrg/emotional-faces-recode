@@ -670,4 +670,55 @@ mod tests {
             trials
         );
     }
+
+    #[test]
+    fn reconstruct_trials_duplicate_trigger_again() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 682076992,
+                trigger_code: 21,
+            },
+            Event {
+                time_microseconds: 682089984,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 682934016,
+                trigger_code: 512,
+            },
+            Event {
+                time_microseconds: 685257984,
+                trigger_code: 33,
+            },
+            Event {
+                time_microseconds: 685259008,
+                trigger_code: 33,
+            },
+            Event {
+                time_microseconds: 685276032,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 686092032,
+                trigger_code: 256,
+            },
+        ]);
+        assert_eq!(
+            vec![
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Female,
+                    response_time_milliseconds: Some(844)
+                },
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Neutral,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(686092 - 685276)
+                }
+            ],
+            trials
+        );
+    }
 }
