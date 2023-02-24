@@ -33,10 +33,10 @@ pub enum Sex {
 
 #[derive(Debug, PartialEq)]
 pub struct Trial {
-    correct_response: bool,
-    condition: Condition,
-    sex: Sex,
-    response_time_milliseconds: Option<i64>,
+    pub correct_response: bool,
+    pub condition: Condition,
+    pub sex: Sex,
+    pub response_time_milliseconds: Option<i64>,
 }
 
 fn has_bit_set(x: i32, n: i32) -> bool {
