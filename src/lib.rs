@@ -146,6 +146,20 @@ pub fn accuracy(trials: &[Trial]) -> f64 {
     trials.iter().filter(|trial| trial.correct_response).count() as f64 / trials.len() as f64
 }
 
+pub fn reaction_time_milliseconds(trials: &[Trial]) -> i64 {
+    let correct_trials = trials
+        .iter()
+        .filter(|trial| trial.correct_response)
+        .collect::<Vec<_>>();
+    let count = correct_trials.len() as i64;
+    (correct_trials
+        .iter()
+        .map(|trial| trial.response_time_milliseconds.unwrap())
+        .sum::<i64>()
+        + count / 2)
+        / count
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{Condition, Event, Sex, Trial};
@@ -1158,6 +1172,33 @@ mod tests {
                     condition: Condition::Angry,
                     sex: Sex::Female,
                     response_time_milliseconds: Some(597)
+                },
+            ])
+        )
+    }
+
+    #[test]
+    fn reaction_time() {
+        assert_eq!(
+            (447 + 214 + 1) / 2,
+            crate::reaction_time_milliseconds(&vec![
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(447)
+                },
+                Trial {
+                    correct_response: false,
+                    condition: Condition::Angry,
+                    sex: Sex::Male,
+                    response_time_milliseconds: None
+                },
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Female,
+                    response_time_milliseconds: Some(214)
                 },
             ])
         )
