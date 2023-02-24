@@ -18,20 +18,20 @@ pub fn parse_events(input: &str) -> Vec<Event> {
         .collect::<Vec<Event>>()
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Condition {
     Angry,
     Happy,
     Neutral,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Sex {
     Male,
     Female,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Trial {
     pub correct_response: bool,
     pub condition: Condition,
