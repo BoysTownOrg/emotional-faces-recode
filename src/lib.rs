@@ -127,7 +127,7 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
             (difference_time_microseconds < 100_000
                 && (has_bit_set(first_event.trigger_code, 12)
                     || has_bit_set(second_event.trigger_code, 12)))
-                || difference_time_microseconds > 1_000_0000
+                || difference_time_microseconds > 10_000_000
         })
         .map(|window| {
             let first_event_index = window[0].0;
