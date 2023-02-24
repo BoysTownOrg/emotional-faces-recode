@@ -60,6 +60,7 @@ fn main() {
         if trials.len() != 240 {
             println!("Unexpected number of trials: {}", trials.len());
             println!("Skipping.");
+            continue;
         }
         writeln!(
             output_file,
