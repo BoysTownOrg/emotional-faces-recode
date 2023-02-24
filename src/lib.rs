@@ -39,13 +39,16 @@ pub struct Trial {
     response_time_milliseconds: Option<i64>,
 }
 
+fn has_bit_set(x: i32, n: i32) -> bool {
+    let mask = 1 << n;
+    (x | mask) == x
+}
+
 fn trial_from_response_ready_index(events: &[Event]) -> Trial {
-    let response = events.iter().skip(2).find(|event| {
-        let button1_mask = 1 << 8;
-        let button2_mask = 1 << 9;
-        (event.trigger_code | button1_mask) == event.trigger_code
-            || (event.trigger_code | button2_mask) == event.trigger_code
-    });
+    let response = events
+        .iter()
+        .skip(2)
+        .find(|event| has_bit_set(event.trigger_code, 8) || has_bit_set(event.trigger_code, 9));
     let mut condition = Condition::Happy;
     let mut sex = Sex::Male;
     let mut correct_code = 0;
@@ -119,7 +122,9 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
         .filter(|window| {
             let difference_time_microseconds =
                 window[1].1.time_microseconds - window[0].1.time_microseconds;
-            (difference_time_microseconds < 100000 && difference_time_microseconds > 2000)
+            (difference_time_microseconds < 100000
+                && (has_bit_set(window[0].1.trigger_code, 12)
+                    || has_bit_set(window[1].1.trigger_code, 12)))
                 || difference_time_microseconds > 10000000
         })
         .map(|window| window[0].0)
@@ -1040,6 +1045,33 @@ mod tests {
                 condition: Condition::Neutral,
                 sex: Sex::Male,
                 response_time_milliseconds: Some(709)
+            },],
+            trials
+        );
+    }
+
+    #[test]
+    fn reconstruct_trials_close_triggers() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 720435968,
+                trigger_code: 4117,
+            },
+            Event {
+                time_microseconds: 720436992,
+                trigger_code: 4117,
+            },
+            Event {
+                time_microseconds: 721166976,
+                trigger_code: 512,
+            },
+        ]);
+        assert_eq!(
+            vec![Trial {
+                correct_response: true,
+                condition: Condition::Angry,
+                sex: Sex::Female,
+                response_time_milliseconds: Some(730)
             },],
             trials
         );
