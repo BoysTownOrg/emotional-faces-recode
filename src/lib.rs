@@ -142,6 +142,10 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
     trials
 }
 
+pub fn accuracy(trials: &[Trial]) -> f64 {
+    trials.iter().filter(|trial| trial.correct_response).count() as f64 / trials.len() as f64
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{Condition, Event, Sex, Trial};
@@ -1124,5 +1128,38 @@ mod tests {
             ],
             trials
         );
+    }
+
+    #[test]
+    fn accuracy() {
+        assert_eq!(
+            3. / 4.,
+            crate::accuracy(&vec![
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(447)
+                },
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Female,
+                    response_time_milliseconds: Some(597)
+                },
+                Trial {
+                    correct_response: false,
+                    condition: Condition::Angry,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(447)
+                },
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Female,
+                    response_time_milliseconds: Some(597)
+                },
+            ])
+        )
     }
 }
