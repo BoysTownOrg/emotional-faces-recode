@@ -115,19 +115,24 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
             let button2_mask = 1 << 9;
             event.trigger_code & (button1_mask | button2_mask) == 0
         })
-        .collect::<Vec<(usize, &Event)>>();
+        .collect::<Vec<_>>();
     dbg!(&enumerated_nonresponses);
     let start_of_trials_indices = enumerated_nonresponses
         .windows(2)
         .filter(|window| {
+            let first_event = window[0].1;
+            let second_event = window[1].1;
             let difference_time_microseconds =
-                window[1].1.time_microseconds - window[0].1.time_microseconds;
-            (difference_time_microseconds < 100000
-                && (has_bit_set(window[0].1.trigger_code, 12)
-                    || has_bit_set(window[1].1.trigger_code, 12)))
-                || difference_time_microseconds > 10000000
+                second_event.time_microseconds - first_event.time_microseconds;
+            (difference_time_microseconds < 100_000
+                && (has_bit_set(first_event.trigger_code, 12)
+                    || has_bit_set(second_event.trigger_code, 12)))
+                || difference_time_microseconds > 1_000_0000
         })
-        .map(|window| window[0].0)
+        .map(|window| {
+            let first_event_index = window[0].0;
+            first_event_index
+        })
         .collect::<Vec<_>>();
     dbg!(&start_of_trials_indices);
     let mut trials = start_of_trials_indices
@@ -1073,6 +1078,53 @@ mod tests {
                 sex: Sex::Female,
                 response_time_milliseconds: Some(730)
             },],
+            trials
+        );
+    }
+
+    #[test]
+    fn reconstruct_trials_15_second_break() {
+        let trials = crate::reconstruct_trials(vec![
+            Event {
+                time_microseconds: 376816000,
+                trigger_code: 31,
+            },
+            Event {
+                time_microseconds: 376830016,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 377276992,
+                trigger_code: 256,
+            },
+            Event {
+                time_microseconds: 379982016,
+                trigger_code: 4096,
+            },
+            Event {
+                time_microseconds: 395027008,
+                trigger_code: 4117,
+            },
+            Event {
+                time_microseconds: 395624000,
+                trigger_code: 512,
+            },
+        ]);
+        assert_eq!(
+            vec![
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Male,
+                    response_time_milliseconds: Some(447)
+                },
+                Trial {
+                    correct_response: true,
+                    condition: Condition::Angry,
+                    sex: Sex::Female,
+                    response_time_milliseconds: Some(597)
+                },
+            ],
             trials
         );
     }
