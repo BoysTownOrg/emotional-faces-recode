@@ -53,6 +53,7 @@ fn main() {
         if extension != "evt" {
             continue;
         }
+        println!("Analyzing {}", path.to_str().unwrap());
         let contents = std::fs::read_to_string(&path).unwrap();
         let events = parse_events(&contents);
         let trials = reconstruct_trials(events);
