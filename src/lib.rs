@@ -39,13 +39,18 @@ pub struct Trial {
     response_time_milliseconds: Option<i64>,
 }
 
-fn trial_from_response_ready_index(events: &Vec<Event>, index: usize) -> Trial {
-    let response = events.get(index + 1);
+fn trial_from_response_ready_index(events: &[Event]) -> Trial {
+    let response = events.iter().skip(2).find(|event| {
+        let button1_mask = 1 << 8;
+        let button2_mask = 1 << 9;
+        (event.trigger_code | button1_mask) == event.trigger_code
+            || (event.trigger_code | button2_mask) == event.trigger_code
+    });
     let mut condition = Condition::Happy;
     let mut sex = Sex::Male;
     let mut correct_code = 0;
     let visual_trigger_mask = 1 << 12;
-    let combined_triggers = events[index].trigger_code | events[index - 1].trigger_code;
+    let combined_triggers = events[0].trigger_code | events[1].trigger_code;
     match combined_triggers & !visual_trigger_mask {
         21 => {
             correct_code = 512;
@@ -85,7 +90,7 @@ fn trial_from_response_ready_index(events: &Vec<Event>, index: usize) -> Trial {
         correct_response = event.trigger_code & !visual_trigger_mask == correct_code;
         if correct_response {
             response_time_milliseconds =
-                Some((event.time_microseconds - events[index].time_microseconds + 500) / 1000);
+                Some((event.time_microseconds - events[1].time_microseconds + 500) / 1000);
         }
     }
 
@@ -98,6 +103,7 @@ fn trial_from_response_ready_index(events: &Vec<Event>, index: usize) -> Trial {
 }
 
 pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
+    dbg!(&events);
     let enumerated_nonresponses = events
         .iter()
         .enumerate()
@@ -107,34 +113,26 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
             event.trigger_code & (button1_mask | button2_mask) == 0
         })
         .collect::<Vec<(usize, &Event)>>();
-    let mut response_ready_indices = enumerated_nonresponses
-        .iter()
-        .enumerate()
-        .filter(|(i, (_, event))| {
-            if *i > 0 {
-                !(event.trigger_code == 4096
-                    && enumerated_nonresponses[i - 1].1.trigger_code == 4096)
-            } else {
-                true
-            }
-        })
-        .map(|(_, enumerated_nonresponse)| enumerated_nonresponse)
-        .collect::<Vec<_>>()
+    dbg!(&enumerated_nonresponses);
+    let response_ready_indices = enumerated_nonresponses
         .windows(2)
         .filter(|window| {
             let difference_time_microseconds =
                 window[1].1.time_microseconds - window[0].1.time_microseconds;
-            !(window[0].1.trigger_code == 4096 && window[0].0 == 0)
-                && difference_time_microseconds > 2500000
-                && difference_time_microseconds < 10000000
+            (difference_time_microseconds < 100000 && difference_time_microseconds > 2000)
+                || difference_time_microseconds > 10000000
         })
         .map(|window| window[0].0)
         .collect::<Vec<usize>>();
-    response_ready_indices.push(enumerated_nonresponses.last().unwrap().0);
-    response_ready_indices
-        .iter()
-        .map(|&index| trial_from_response_ready_index(&events, index))
-        .collect()
+    dbg!(&response_ready_indices);
+    let mut trials = response_ready_indices
+        .windows(2)
+        .map(|indices| trial_from_response_ready_index(&events[indices[0]..indices[1]]))
+        .collect::<Vec<_>>();
+    trials.push(trial_from_response_ready_index(
+        &events[*response_ready_indices.last().unwrap()..],
+    ));
+    trials
 }
 
 #[cfg(test)]
@@ -888,7 +886,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn reconstruct_trials_extra_visual() {
         let trials = crate::reconstruct_trials(vec![
             Event {
