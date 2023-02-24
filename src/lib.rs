@@ -142,8 +142,8 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
     trials
 }
 
-pub fn accuracy(trials: &[Trial]) -> f64 {
-    trials.iter().filter(|trial| trial.correct_response).count() as f64 / trials.len() as f64
+pub fn accuracy_percentage(trials: &[Trial]) -> f64 {
+    100. * trials.iter().filter(|trial| trial.correct_response).count() as f64 / trials.len() as f64
 }
 
 pub fn reaction_time_milliseconds(trials: &[Trial]) -> i64 {
@@ -1147,8 +1147,8 @@ mod tests {
     #[test]
     fn accuracy() {
         assert_eq!(
-            3. / 4.,
-            crate::accuracy(&vec![
+            75.,
+            crate::accuracy_percentage(&vec![
                 Trial {
                     correct_response: true,
                     condition: Condition::Angry,
