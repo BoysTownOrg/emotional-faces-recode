@@ -106,7 +106,6 @@ fn trial_from_response_ready_index(events: &[Event]) -> Trial {
 }
 
 pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
-    dbg!(&events);
     let enumerated_nonresponses = events
         .iter()
         .enumerate()
@@ -116,7 +115,6 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
             event.trigger_code & (button1_mask | button2_mask) == 0
         })
         .collect::<Vec<_>>();
-    dbg!(&enumerated_nonresponses);
     let start_of_trials_indices = enumerated_nonresponses
         .windows(2)
         .filter(|window| {
@@ -134,7 +132,6 @@ pub fn reconstruct_trials(events: Vec<Event>) -> Vec<Trial> {
             first_event_index
         })
         .collect::<Vec<_>>();
-    dbg!(&start_of_trials_indices);
     let mut trials = start_of_trials_indices
         .windows(2)
         .map(|indices| trial_from_response_ready_index(&events[indices[0]..indices[1]]))
