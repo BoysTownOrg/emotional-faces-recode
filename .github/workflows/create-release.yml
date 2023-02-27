@@ -1,0 +1,22 @@
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+
+jobs:
+  release:
+    name: create release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
+      - name: build
+        run: cargo build
+      - name: create GitHub release
+        run: |
+          7z.exe a emotional-faces-recode-${{ steps.get_version.outputs.VERSION }}.zip target\debug\emotional-faces-recode.exe
+          gh release create v${{ steps.get_version.outputs.VERSION }} emotional-faces-recode-${{ steps.get_version.outputs.VERSION }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
