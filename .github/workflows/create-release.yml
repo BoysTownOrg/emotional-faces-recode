@@ -11,12 +11,14 @@ jobs:
       - uses: actions/checkout@v3
       - name: Get the version
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
+        uses: dawidd6/action-get-tag@v1
+        with:
+          strip_v: true
       - name: build
         run: cargo build
       - name: create GitHub release
         run: |
-          7z.exe a emotional-faces-recode-${{ steps.get_version.outputs.VERSION }}.zip target\debug\emotional-faces-recode.exe
-          gh release create v${{ steps.get_version.outputs.VERSION }} emotional-faces-recode-${{ steps.get_version.outputs.VERSION }}.zip
+          7z.exe a emotional-faces-recode-${{ steps.get_version.outputs.tag }}.zip target\debug\emotional-faces-recode.exe
+          gh release create v${{ steps.get_version.outputs.tag }} emotional-faces-recode-${{ steps.get_version.outputs.tag }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
